@@ -1,0 +1,101 @@
+{
+  "pace": {
+    "label": "페이스",
+    "aliases": ["페이스", "속도", "min/km", "pace", "분속", "km당"],
+    "unit": "min/km",
+    "db_view": "v_running_pace",
+    "db_column": "pace_min_per_km",
+    "calculation": "정지구간(is_moving=0) 완전 제외. v_running_pace 뷰 사용",
+    "common_misuse": "running_sessions.duration_min으로 나누면 안 됨 — 정지 시간 포함되어 페이스가 느리게 나옴",
+    "trend_question": "좋아지고 있어? → 4주 이동평균 하락 추세 확인 (낮을수록 빠름)",
+    "interpretation": {
+      "marathon_sub4":   "< 5:41",
+      "marathon_sub430": "< 6:24",
+      "beginner":        "> 7:00",
+      "note": "페이스 수치가 낮을수록 빠름. 5:41 = 1km를 5분 41초에 주파"
+    }
+  },
+
+  "sustained_time": {
+    "label": "유지 시간",
+    "aliases": ["유지시간", "유지 시간", "연속 러닝", "최장 구간", "끊기지 않고", "쉬지 않고"],
+    "unit": "min",
+    "db_table": "running_splits",
+    "calculation": "is_moving=1 연속 구간 중 최장 블록의 합산 duration_sec",
+    "edge_cases": ["신호등 10초 이내 정지(grace period)는 연속으로 처리"],
+    "sql_hint": "LAG/gap detection으로 블록 구분 후 MAX(block_duration). 예: WITH blocks AS (SELECT *, SUM(CASE WHEN is_moving=0 AND prev_moving=1 THEN 1 ELSE 0 END) OVER (PARTITION BY session_id ORDER BY split_index) AS block_id ...) SELECT MAX(SUM(duration_sec)) FROM blocks GROUP BY session_id, block_id",
+    "trend_question": "늘었어? → 최근 4주 세션별 최장 연속 구간 추세"
+  },
+
+  "cadence": {
+    "label": "케이던스",
+    "aliases": ["케이던스", "cadence", "걸음수", "보폭 수", "분당 보수"],
+    "unit": "spm (steps per minute)",
+    "db_table": "running_splits",
+    "note": "현재 DB에 cadence 컬럼 없음. RunningStrideLength 데이터로 추정 가능",
+    "typical_range": {
+      "beginner":     "150~160 spm",
+      "intermediate": "160~170 spm",
+      "advanced":     "170~180+ spm"
+    }
+  },
+
+  "distance": {
+    "label": "거리",
+    "aliases": ["거리", "km", "킬로미터", "몇 km", "얼마나"],
+    "unit": "km",
+    "db_table": "running_sessions",
+    "db_column": "distance_km",
+    "weekly_summary": "v_weekly_summary.total_km"
+  },
+
+  "heart_rate": {
+    "label": "심박수",
+    "aliases": ["심박수", "심박", "bpm", "맥박", "심장"],
+    "unit": "bpm",
+    "db_table": "heart_rate",
+    "db_column": "bpm",
+    "zones": {
+      "zone1_recovery":   "< 114 bpm (최대심박 190 기준 60%)",
+      "zone2_aerobic":    "114~133 bpm (60~70%)",
+      "zone3_tempo":      "133~152 bpm (70~80%)",
+      "zone4_threshold":  "152~171 bpm (80~90%)",
+      "zone5_max":        "> 171 bpm (90%+)"
+    },
+    "sql_hint": "러닝 중 심박수: recorded_at이 세션 started_at~ended_at 사이인 heart_rate rows"
+  },
+
+  "cold_weather_running": {
+    "label": "추운 날 러닝",
+    "condition": "기온 5도 이하",
+    "pace_adjustment": "평소 대비 10~15% 느려지는 것이 정상 (min/km 기준 +0.25~0.5 추가)",
+    "recommendation": [
+      "워밍업 최소 5분 필수 — 근육 냉각 방지",
+      "실내 코스 또는 바람 막힌 코스 우선 선택",
+      "목표 페이스보다 30초 느리게 시작",
+      "목·손·귀 보온 필수",
+      "수분 섭취 의식적으로 — 추우면 갈증 못 느낌"
+    ],
+    "db_hint": "running_courses WHERE cold_suitable = 1 AND location LIKE '%마포%'"
+  },
+
+  "recovery": {
+    "label": "회복 상태",
+    "aliases": ["회복", "컨디션", "피로", "무리"],
+    "signals": [
+      "이번 주 총 km vs 지난 주 비교",
+      "최근 2회 세션 간격 (일수)",
+      "세션 중 평균 심박수 추이"
+    ],
+    "db_hint": "v_weekly_summary + heart_rate JOIN running_sessions"
+  },
+
+  "weekly_mileage": {
+    "label": "주간 목표 km",
+    "aliases": ["주간 목표", "이번 주 km", "주간 거리", "weekly"],
+    "unit": "km",
+    "db_view": "v_weekly_summary",
+    "db_column": "total_km",
+    "user_target": "user_context WHERE key='weekly_target_km'"
+  }
+}

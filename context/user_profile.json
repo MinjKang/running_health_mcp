@@ -1,0 +1,14 @@
+{
+  "name": "강민정",
+  "age": 30,
+  "running_goal": "풀마라톤 서브-4",
+  "target_pace_min_km": 5.683,
+  "target_pace_display": "5:41",
+  "weekly_target_km": 40,
+  "preferred_distance_km": [8, 10],
+  "preferred_area": "마포구",
+  "resting_heart_rate": 58,
+  "max_heart_rate": 190,
+  "fitness_level": "intermediate",
+  "notes": "풀마라톤 서브-4 목표. 주 4~5회 러닝. 마포구 한강 코스 선호."
+}
